@@ -41,9 +41,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework.authtoken',
-    'rest_framework',
-    'channels'
+    'rest_framework'
+
 ]
+CORS_ORIGIN_ALLOW_ALL = True
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -76,9 +77,10 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'Transport.wsgi.application'
+# ASGI_APPLICATION = 'Transport.asgi.application'
 
-ASGI_APPLICATION = 'Transport.asgi.application'
-
+STREAM_API_KEY = 'dr3gg57zak5g'
+STREAM_API_SECRET = '28t7w9njemu7xtjbwkdwradgvcr35dfsm36h8mwxqshpnug8nwes73rhbzwaac75'
 
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
@@ -149,11 +151,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'mainApp.MyUser'
 
 
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            'hosts': [('localhost', 6379)],
-            },
-        },
-}
+# CHANNEL_LAYERS = {
+#     'default': {
+#         'BACKEND': 'channels_redis.core.RedisChannelLayer',
+#         'CONFIG': {
+#             'hosts': [('localhost', 6379)],
+#             },
+#         },
+# }

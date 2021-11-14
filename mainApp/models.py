@@ -69,9 +69,17 @@ class Request(models.Model):
         return self.applicant.user.username + ' from ' + self.origin + ' to ' + self.destination
 
 
+class Status(models.Model):
+    title = models.CharField(max_length=100, unique=True)
+
+    def __str__(self):
+        return self.title
+
+
 class Trip(models.Model):
     request = models.OneToOneField(Request, on_delete=models.RESTRICT)
     carrier = models.ForeignKey(Carrier, on_delete=models.RESTRICT)
+    status = models.ForeignKey(Status, on_delete=models.RESTRICT)
 
     def __str__(self):
         return self.request.origin + ' to ' + self.request.destination + ' by ' + str(self.carrier.model)
@@ -95,3 +103,10 @@ class Message(models.Model):
 
     def __str__(self):
         return self.message
+
+
+class Member(models.Model):
+    username = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.username.capitalize()

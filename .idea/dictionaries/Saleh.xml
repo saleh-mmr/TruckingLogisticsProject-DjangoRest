@@ -2,6 +2,8 @@
   <dictionary name="Saleh">
     <words>
       <w>asgi</w>
+      <w>signin</w>
+      <w>signout</w>
     </words>
   </dictionary>
 </component>

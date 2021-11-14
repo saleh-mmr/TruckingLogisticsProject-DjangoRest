@@ -10,6 +10,12 @@ from . import models
 from .Authorization import IsDriver, IsApplicant
 from .Authentication import token_expire_handler
 
+import json
+from django.conf import settings
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
+from stream_chat import StreamChat
+
 
 @api_view(['POST'])
 @permission_classes(())
@@ -197,7 +203,8 @@ def acceptRequest(request):
                     for carrier in current_driver_carriers:
                         if models.RequiredClass.objects.filter(request=current_request,
                                                                classification=carrier.classification):
-                            models.Trip.objects.create(request=current_request, carrier=carrier)
+                            new_status = models.Status.objects.get(title='new')
+                            models.Trip.objects.create(request=current_request, carrier=carrier, status=new_status)
                             current_driver.canAccept = False
                             current_driver.save()
                             return Response({"message": "OK!"}, status=status.HTTP_200_OK)
@@ -207,6 +214,90 @@ def acceptRequest(request):
                 return Response({"message": "You have an active trip!"}, status=status.HTTP_406_NOT_ACCEPTABLE)
         else:
             return Response({"message": "This is not a valid request!"}, status=status.HTTP_406_NOT_ACCEPTABLE)
+    except Exception as e:
+        return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsDriver])
+def loadAnnouncement(request):
+    try:
+        data = request.data
+        current_trip = models.Trip.objects.get(id=data["trip_id"])
+        current_driver = models.Driver.objects.get(user=request.user)
+        if current_trip.carrier.driver == current_driver:
+            loaded_status = models.Status.objects.get(title='loaded')
+            current_trip.status = loaded_status
+            current_trip.save()
+            return Response({"message": "OK!"}, status=status.HTTP_200_OK)
+        return Response({"message": "Just The owner of the trip can edit status!"},
+                        status=status.HTTP_406_NOT_ACCEPTABLE)
+    except Exception as e:
+        return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsDriver])
+def unloadAnnouncement(request):
+    try:
+        data = request.data
+        current_trip = models.Trip.objects.get(id=data["trip_id"])
+        current_driver = models.Driver.objects.get(user=request.user)
+        if current_trip.carrier.driver == current_driver:
+            unloaded_status = models.Status.objects.get(title='unloaded')
+            current_trip.status = unloaded_status
+            current_trip.save()
+            return Response({"message": "OK!"}, status=status.HTTP_200_OK)
+        return Response({"message": "Just The owner of the trip can edit status!"},
+                        status=status.HTTP_406_NOT_ACCEPTABLE)
+    except Exception as e:
+        return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsApplicant])
+def showApplicantRequestList(request):
+    try:
+        current_applicant = models.Driver.objects.get(user=request.user)
+        rsp = {}
+        requests = models.Request.objects.filter(applicant=current_applicant)
+        for request in requests:
+            if not models.Trip.objects.filter(request=request):
+                rsp.update({"req_id": request.id,
+                            "origin": request.origin,
+                            "loading_date": request.loading_date,
+                            "destination": request.destination,
+                            "unloading_date": request.unloading_date,
+                            "load_type": request.load_type,
+                            "weight": request.weight})
+        return Response({"list": rsp}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsApplicant])
+def showApplicantTripList(request):
+    try:
+        current_applicant = models.Driver.objects.get(user=request.user)
+        rsp = {}
+        requests = models.Request.objects.filter(applicant=current_applicant)
+        for request in requests:
+            if models.Trip.objects.filter(request=request):
+                trip = models.Trip.objects.get(request=request)
+                rsp.update({"trip_id": trip.id,
+                            "origin": request.origin,
+                            "loading_date": request.loading_date,
+                            "destination": request.destination,
+                            "unloading_date": request.unloading_date,
+                            "load_type": request.load_type,
+                            "weight": request.weight,
+                            "carrier_class": trip.carrier.classification,
+                            "carrier_model": trip.carrier.model,
+                            "carrier_tag": trip.carrier.tag,
+                            "driver_username": trip.carrier.driver.user.username,
+                            "trip_status": trip.status.title})
+        return Response({"list": rsp}, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -261,7 +352,7 @@ def conversation(request):
         current_user = request.user
         for message in models.Message.objects.filter(request=data["request_id"], sender=interlocutor,
                                                      receiver=current_user) | models.Message.objects.filter(
-                request=data["request_id"], sender=current_user, receiver=interlocutor):
+            request=data["request_id"], sender=current_user, receiver=interlocutor):
             rsp.append({message.sender.username: message.message})
             if message.sender == current_user:
                 message.is_read = True
@@ -269,3 +360,43 @@ def conversation(request):
         return Response(rsp, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([])
+def iniit(request):
+    print("a")
+    print(request)
+    data = request.data
+    if not request.body:
+        return JsonResponse(status=200, data={'message': 'No request body'})
+    body = json.loads(bytes(request.body).decode('utf-8'))
+
+    if 'username' not in body:
+        return JsonResponse(status=400, data={'message': 'Username is required to join the channel'})
+
+    username = data['username']
+    client = StreamChat(api_key=settings.STREAM_API_KEY,
+                        api_secret=settings.STREAM_API_SECRET)
+    print(client)
+    print(data)
+    print(username)
+    channel = client.channel('messaging', 'General')
+    print(channel)
+    try:
+        member = models.Member.objects.get(username=username)
+        token = bytes(client.create_token(
+            user_id=member.username)).decode('utf-8')
+        return JsonResponse(status=200,
+                            data={"username": member.username, "token": token, "apiKey": settings.STREAM_API_KEY})
+
+    except models.Member.DoesNotExist:
+        member = models.Member(username=username)
+        member.save()
+        token = bytes(client.create_token(
+            user_id=username)).decode('utf-8')
+        client.update_user({"id": username, "role": "admin"})
+        channel.add_members([username])
+
+        return JsonResponse(status=200,
+                            data={"username": member.username, "token": token, "apiKey": settings.STREAM_API_KEY})
