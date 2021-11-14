@@ -2,7 +2,6 @@ from datetime import date
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.timezone import *
-from django.contrib.postgres.fields import ArrayField
 
 
 class MyUser(AbstractUser):
@@ -106,7 +105,7 @@ class Message(models.Model):
 
 
 class Member(models.Model):
-    username = models.CharField(max_length=100)
+    username = models.CharField(max_length=100, unique=True)
 
     def __str__(self):
         return self.username.capitalize()

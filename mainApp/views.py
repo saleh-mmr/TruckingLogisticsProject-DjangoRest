@@ -362,12 +362,8 @@ def conversation(request):
         return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-@api_view(['POST'])
-@permission_classes([])
-def iniit(request):
-    print("a")
-    print(request)
-    data = request.data
+@csrf_exempt
+def init(request):
     if not request.body:
         return JsonResponse(status=200, data={'message': 'No request body'})
     body = json.loads(bytes(request.body).decode('utf-8'))
@@ -375,26 +371,19 @@ def iniit(request):
     if 'username' not in body:
         return JsonResponse(status=400, data={'message': 'Username is required to join the channel'})
 
-    username = data['username']
+    username = body['username']
     client = StreamChat(api_key=settings.STREAM_API_KEY,
                         api_secret=settings.STREAM_API_SECRET)
-    print(client)
-    print(data)
-    print(username)
     channel = client.channel('messaging', 'General')
-    print(channel)
     try:
         member = models.Member.objects.get(username=username)
-        token = bytes(client.create_token(
-            user_id=member.username)).decode('utf-8')
-        return JsonResponse(status=200,
-                            data={"username": member.username, "token": token, "apiKey": settings.STREAM_API_KEY})
+        token = bytes(client.create_token(user_id=member.username), encoding='utf-8').decode('utf-8')
+        return JsonResponse(status=200, data={"username": member.username, "token": token, "apiKey": settings.STREAM_API_KEY})
 
-    except models.Member.DoesNotExist:
+    except Exception as e:
         member = models.Member(username=username)
         member.save()
-        token = bytes(client.create_token(
-            user_id=username)).decode('utf-8')
+        token = bytes(client.create_token(user_id=username), encoding='utf-8').decode('utf-8')
         client.update_user({"id": username, "role": "admin"})
         channel.add_members([username])
 

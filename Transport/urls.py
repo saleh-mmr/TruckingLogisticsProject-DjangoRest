@@ -20,7 +20,6 @@ from django.conf.urls import url
 from mainApp.views import *
 
 urlpatterns = [
-    url(r'^', signUp, name='signup'),
     url(r'^admin/', admin.site.urls),
     url(r'^signup/', signUp, name='signup'),
     url(r'^signin/', signIn, name='signin'),
@@ -34,5 +33,5 @@ urlpatterns = [
     url(r'^chat-applicant/', chatApplicant, name='chatApplicant'),
     url(r'^conversation/', conversation, name='conversation'),
     url(r'^newreport/', conversation, name='conversation'),
-    url(r'^join/', iniit, name='join'),
+    url(r'^join', init, name='join'),
 ]
