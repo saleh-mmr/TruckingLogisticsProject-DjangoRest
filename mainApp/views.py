@@ -362,6 +362,12 @@ def conversation(request):
         return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def realChat(request, room_name):
+    pass
+
+
 @csrf_exempt
 def init(request):
     if not request.body:

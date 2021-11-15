@@ -33,5 +33,6 @@ urlpatterns = [
     url(r'^chat-applicant/', chatApplicant, name='chatApplicant'),
     url(r'^conversation/', conversation, name='conversation'),
     url(r'^newreport/', conversation, name='conversation'),
+    url(r'^chat/(?P<room_name>\d+)$', realChat, name='realChat'),
     url(r'^join', init, name='join'),
 ]

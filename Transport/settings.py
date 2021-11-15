@@ -32,6 +32,7 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
+    'channels',
     'mainApp.apps.MainappConfig',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -75,8 +76,8 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'Transport.wsgi.application'
-# ASGI_APPLICATION = 'Transport.asgi.application'
+# WSGI_APPLICATION = 'Transport.wsgi.application'
+ASGI_APPLICATION = 'Transport.asgi.application'
 
 STREAM_API_KEY = 'dr3gg57zak5g'
 STREAM_API_SECRET = '28t7w9njemu7xtjbwkdwradgvcr35dfsm36h8mwxqshpnug8nwes73rhbzwaac75'
@@ -148,3 +149,12 @@ STATIC_URL = '/static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'mainApp.MyUser'
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("localhost", 6379)],
+        },
+    },
+}
