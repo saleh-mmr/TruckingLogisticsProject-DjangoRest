@@ -312,9 +312,9 @@ def chatDriver(request):
             request = models.Request.objects.get(id=data["request_id"])
             applicant = request.applicant
             receiver = applicant.user
-            message = data["message"]
+            content = data["content"]
             new_message = models.Message.objects.create(sender=sender, receiver=receiver, request=request,
-                                                        message=message)
+                                                        content=content)
             new_message.save()
             return Response({"message": "sent!"}, status=status.HTTP_200_OK)
         return Response({"message": "Invalid Request!"}, status=status.HTTP_200_OK)
@@ -332,9 +332,9 @@ def chatApplicant(request):
         if models.Request.objects.filter(id=data["request_id"], applicant=applicant):
             request = models.Request.objects.get(id=data["request_id"])
             receiver = models.MyUser.objects.get(username=data["receiver_username"])
-            message = data["message"]
+            content = data["content"]
             new_message = models.Message.objects.create(sender=sender, receiver=receiver, request=request,
-                                                        message=message)
+                                                        content=content)
             new_message.save()
             return Response({"message": "sent!"}, status=status.HTTP_200_OK)
         return Response({"message": "Invalid Request!"}, status=status.HTTP_200_OK)
@@ -353,7 +353,7 @@ def conversation(request):
         for message in models.Message.objects.filter(request=data["request_id"], sender=interlocutor,
                                                      receiver=current_user) | models.Message.objects.filter(
             request=data["request_id"], sender=current_user, receiver=interlocutor):
-            rsp.append({message.sender.username: message.message})
+            rsp.append({message.sender.username: message.content})
             if message.sender == current_user:
                 message.is_read = True
                 message.save()
@@ -362,14 +362,8 @@ def conversation(request):
         return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def realChat(request, room_name):
-    pass
-
-
 @csrf_exempt
-def init(request):
+def streamChat(request):
     if not request.body:
         return JsonResponse(status=200, data={'message': 'No request body'})
     body = json.loads(bytes(request.body).decode('utf-8'))
@@ -384,7 +378,8 @@ def init(request):
     try:
         member = models.Member.objects.get(username=username)
         token = bytes(client.create_token(user_id=member.username), encoding='utf-8').decode('utf-8')
-        return JsonResponse(status=200, data={"username": member.username, "token": token, "apiKey": settings.STREAM_API_KEY})
+        return JsonResponse(status=200,
+                            data={"username": member.username, "token": token, "apiKey": settings.STREAM_API_KEY})
 
     except Exception as e:
         member = models.Member(username=username)
