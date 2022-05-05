@@ -11,7 +11,6 @@ class MyUser(AbstractUser):
 
 class Driver(models.Model):
     user = models.OneToOneField(MyUser, on_delete=models.CASCADE)
-    license_number = models.CharField(blank=False, unique=True, max_length=70)
     can_accept = models.BooleanField(default=True)
 
     def __str__(self):

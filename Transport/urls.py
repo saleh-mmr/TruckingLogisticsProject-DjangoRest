@@ -21,6 +21,8 @@ from mainApp.views import *
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
+    url(r'^usercheck/', isRegistered, name='usercheck'),
+    url(r'^codecheck/', isValid, name='codecheck'),
     url(r'^signup/', signUp, name='signup'),
     url(r'^signin/', signIn, name='signin'),
     url(r'^signout/', signOut, name='signout'),

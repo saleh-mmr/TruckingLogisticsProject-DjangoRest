@@ -19,20 +19,53 @@ from stream_chat import StreamChat
 
 @api_view(['POST'])
 @permission_classes(())
+def isRegistered(request):
+    try:
+        data = request.data
+        data_phone = data['pnumber']
+        found_user = models.MyUser.objects.filter(phone=data_phone)
+        if found_user:
+            return Response({"flag": True}, status=status.HTTP_200_OK)
+        return Response({"flag": False}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"message": "Something might be Wrong!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes(())
+def isValid(request):
+    try:
+        data = request.data
+        data_code = data['code']
+        list = [5219, 4950, 8655, 1361, 7081]
+        if data_code in list:
+            return Response({"flag": True}, status=status.HTTP_200_OK)
+        return Response({"message": "Something might be Wrong!"}, status=status.HTTP_401_UNAUTHORIZED)
+    except Exception as e:
+        return Response({"message": "Something might be Wrong!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes(())
 def signUp(request):
     try:
         data = request.data
         data_first_name = data['firstname']
         data_last_name = data['lastname']
-        data_username = data['username']
+        data_username = data['pnumber']
         data_phone_number = data['pnumber']
         data_type = data['type']
         data_password = data['password']
         data_confirm_password = data['cpassword']
         if data_confirm_password == data_password:
-            newUser = models.MyUser.objects.create(first_name=data_first_name, last_name=data_last_name,
-                                                   username=data_username, phone=data_phone_number,
-                                                   type=data_type)
+            if data_type == "1":
+                newUser = models.MyUser.objects.create(first_name=data_first_name, last_name=data_last_name,
+                                                       username=data_username, phone=data_phone_number,
+                                                       type=True)
+            else:
+                newUser = models.MyUser.objects.create(first_name=data_first_name, last_name=data_last_name,
+                                                       username=data_username, phone=data_phone_number,
+                                                       type=False)
             newUser.set_password(data_password)
             newUser.save()
             if newUser.type:
@@ -40,7 +73,8 @@ def signUp(request):
             else:
                 newApplicant = models.Applicant.objects.create(user=newUser)
             if newUser:
-                return Response({"message": "Created Successfully!"}, status=status.HTTP_200_OK)
+                return Response({"flag": True}, status=status.HTTP_200_OK)
+
         else:
             return Response({"message": "Something might be Wrong!"}, status=status.HTTP_406_NOT_ACCEPTABLE)
     except Exception as e:
@@ -56,10 +90,16 @@ def signIn(request):
         if user:
             token, _ = Token.objects.get_or_create(user=user)
             is_expired, token = token_expire_handler(token)
+            if models.Driver.objects.filter(user=user):
+                userType = True
+            else:
+                userType = False
             tmp_response = {
+                'type': userType,
                 'access': token.key,
                 'userid': token.user_id
             }
+            print(tmp_response)
             return Response(tmp_response, status=status.HTTP_200_OK)
         else:
             return Response({"message": "Wrong username or password"}, status=status.HTTP_401_UNAUTHORIZED)
