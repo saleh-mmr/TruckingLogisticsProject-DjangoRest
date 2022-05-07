@@ -19,34 +19,6 @@ from stream_chat import StreamChat
 
 @api_view(['POST'])
 @permission_classes(())
-def isRegistered(request):
-    try:
-        data = request.data
-        data_phone = data['pnumber']
-        found_user = models.MyUser.objects.filter(phone=data_phone)
-        if found_user:
-            return Response({"flag": True}, status=status.HTTP_200_OK)
-        return Response({"flag": False}, status=status.HTTP_200_OK)
-    except Exception as e:
-        return Response({"message": "Something might be Wrong!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-@api_view(['POST'])
-@permission_classes(())
-def isValid(request):
-    try:
-        data = request.data
-        data_code = data['code']
-        list = [5219, 4950, 8655, 1361, 7081]
-        if data_code in list:
-            return Response({"flag": True}, status=status.HTTP_200_OK)
-        return Response({"message": "Something might be Wrong!"}, status=status.HTTP_401_UNAUTHORIZED)
-    except Exception as e:
-        return Response({"message": "Something might be Wrong!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-@api_view(['POST'])
-@permission_classes(())
 def signUp(request):
     try:
         data = request.data
@@ -69,7 +41,7 @@ def signUp(request):
             newUser.set_password(data_password)
             newUser.save()
             if newUser.type:
-                newDriver = models.Driver.objects.create(user=newUser)
+                newDriver = models.Driver.objects.create(user=newUser, can_accept=True)
             else:
                 newApplicant = models.Applicant.objects.create(user=newUser)
             if newUser:
@@ -99,7 +71,6 @@ def signIn(request):
                 'access': token.key,
                 'userid': token.user_id
             }
-            print(tmp_response)
             return Response(tmp_response, status=status.HTTP_200_OK)
         else:
             return Response({"message": "Wrong username or password"}, status=status.HTTP_401_UNAUTHORIZED)
@@ -119,6 +90,344 @@ def signOut(request):
 
 
 @api_view(['POST'])
+@permission_classes(())
+def isRegistered(request):
+    try:
+        data = request.data
+        data_phone = data['pnumber']
+        found_user = models.MyUser.objects.filter(phone=data_phone)
+        if found_user:
+            return Response({"flag": True}, status=status.HTTP_200_OK)
+        return Response({"flag": False}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"message": "Something might be Wrong!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes(())
+def isRegistered(request):
+    try:
+        data = request.data
+        data_phone = data['pnumber']
+        found_user = models.MyUser.objects.filter(phone=data_phone)
+        if found_user:
+            return Response({"flag": True}, status=status.HTTP_200_OK)
+        return Response({"flag": False}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"message": "Something might be Wrong!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes(())
+def getNumbers(request):
+    try:
+        driverNum = models.Driver.objects.filter().count()
+        applicantNum = models.Applicant.objects.filter().count()
+        unloaded = models.TripStatus.objects.get(title="تخلیه شده")
+        tripNum = models.Trip.objects.filter(status=unloaded).count()
+        carrierNum = models.Carrier.objects.count()
+        rsp = {"driverNum": driverNum, "applicantNum": applicantNum, "tripNum": tripNum, "carrierNum": carrierNum}
+        return Response(rsp, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"message": "Something might be Wrong!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes(())
+def getLoadType(request):
+    try:
+        rsp = []
+        for i in models.LoadType.objects.filter():
+            rsp.append(i.title)
+        return Response({"list": rsp}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"message": "Something might be Wrong!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes(())
+def getClassifications(request):
+    try:
+        rsp = []
+        for i in models.Classification.objects.filter():
+            rsp.append(i.title)
+        return Response({"list": rsp}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"message": "Something might be Wrong!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def checkUserType(request):
+    try:
+        if models.Driver.objects.filter(user=request.user):
+            return Response({"flag": True}, status=status.HTTP_200_OK)
+        else:
+            return Response({"flag": False}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"message": "Something might be Wrong!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes(())
+def isValid(request):
+    try:
+        data = request.data
+        data_code = data['code']
+        list = [5219, 4950, 8655, 1361, 7081]
+        if data_code in list:
+            return Response({"flag": True}, status=status.HTTP_200_OK)
+        return Response({"message": "Something might be Wrong!"}, status=status.HTTP_401_UNAUTHORIZED)
+    except Exception as e:
+        return Response({"message": "Something might be Wrong!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsDriver])
+def getDriverInfo(request):
+    try:
+        current_user = request.user
+        current_driver = models.Driver.objects.get(user=current_user)
+        rsp = {"driverId": current_driver.id,
+               "driverName": current_driver.user.first_name + " " + current_driver.user.last_name,
+               "driverPhone": current_driver.user.phone
+               }
+        print()
+        return Response({"list": rsp}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsDriver])
+def showCarriers(request):
+    try:
+        current_user = request.user
+        current_driver = models.Driver.objects.get(user=current_user)
+        carriers = models.Carrier.objects.filter(driver=current_driver)
+        rsp = []
+        flag = False
+        for i in carriers:
+            rsp.append({"model": i.model, "year": i.year, "tag": i.tag,
+                        "classification": i.classification.title})
+            flag = True
+        return Response({"list": rsp, "flag": flag}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsDriver])
+def newCarrier(request):
+    try:
+        data = request.data
+        current_user = request.user
+        model = data["model"]
+        tag = data["tag"]
+        year = data["year"]
+        classification = data["classification"]
+        current_driver = models.Driver.objects.get(user=current_user)
+        isSubmitted = models.Carrier.objects.filter(tag=tag)
+        if not isSubmitted:
+            if models.Classification.objects.filter(title=classification):
+                carrierClassification = models.Classification.objects.get(title=classification)
+                models.Carrier.objects.create(driver=current_driver, model=model, tag=tag, year=year,
+                                              classification=carrierClassification)
+                return Response({"message": "New Truck added Successfully!", "flag": True}, status=status.HTTP_200_OK)
+            return Response({"message": "class", "flag": False}, status=status.HTTP_406_NOT_ACCEPTABLE)
+        else:
+            return Response({"message": "tag", "flag": False}, status=status.HTTP_406_NOT_ACCEPTABLE)
+    except Exception as e:
+        return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsDriver])
+def showRequestList(request):
+    try:
+        current_user = request.user
+        current_driver = models.Driver.objects.get(user=current_user)
+        carriers = models.Carrier.objects.filter(driver=current_driver)
+        rsp = []
+        flag = False
+        for carrier in carriers:
+            if models.RequiredClass.objects.filter(classification=carrier.classification):
+                for i in models.RequiredClass.objects.filter(classification=carrier.classification):
+                    if not models.Trip.objects.filter(request=i.request):
+                        rsp.append({"reqid": i.request.id, "origin": i.request.origin,
+                                    "destination": i.request.destination, "loading_date": i.request.loading_date,
+                                    "unloading_date": i.request.unloading_date,
+                                    "proposed_price": i.request.proposed_price})
+                        flag = True
+        return Response({"list": rsp, "flag": flag}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsDriver])
+def showRequestDetail(request):
+    try:
+        data = request.data
+        current_user = request.user
+        request_id = data["request_id"]
+        current_request = models.Request.objects.get(id=request_id)
+        rsp = {"reqid": current_request.id,
+               "origin": current_request.origin,
+               "destination": current_request.destination,
+               "loadingDate": current_request.loading_date,
+               "unloadingDate": current_request.unloading_date,
+               "loadType": current_request.load_type.title,
+               "weight": current_request.weight,
+               "value": current_request.value,
+               "description": current_request.description,
+               "proposedPrice": current_request.proposed_price,
+               "receiverName": current_request.receiver_name,
+               "receiverPhone": current_request.receiver_phone,
+               "senderPhone": current_request.applicant.user.phone,
+               "senderName": current_request.applicant.user.first_name + " " + current_request.applicant.user.last_name,
+               }
+        return Response({"rsp": rsp, "flag": True}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsDriver])
+def acceptRequest(request):
+    try:
+        data = request.data
+        current_user = request.user
+        request_id = data["request_id"]
+        current_driver = models.Driver.objects.get(user=current_user)
+        current_driver_carriers = models.Carrier.objects.filter(driver=current_driver)
+        if models.Request.objects.filter(id=request_id):
+            current_request = models.Request.objects.get(id=request_id)
+            if current_driver.can_accept:
+                if not models.Trip.objects.filter(request=current_request):
+                    for carrier in current_driver_carriers:
+                        if models.RequiredClass.objects.filter(request=current_request,
+                                                               classification=carrier.classification):
+                            new_status = models.TripStatus.objects.get(title='پذیرفته شده')
+                            models.Trip.objects.create(request=current_request, carrier=carrier, status=new_status)
+                            current_driver.can_accept = False
+                            current_driver.save()
+                            return Response({"message": "OK!"}, status=status.HTTP_200_OK)
+                    return Response({"message": "You dont have required truck!"}, status=status.HTTP_406_NOT_ACCEPTABLE)
+                return Response({"message": "This request has an active trip!"}, status=status.HTTP_406_NOT_ACCEPTABLE)
+            return Response({"message": "You have an active trip!"}, status=status.HTTP_406_NOT_ACCEPTABLE)
+        return Response({"message": "This is not a valid request!"}, status=status.HTTP_406_NOT_ACCEPTABLE)
+    except Exception as e:
+        return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsDriver])
+def showActiveTrip(request):
+    try:
+        current_user = request.user
+        current_driver = models.Driver.objects.get(user=current_user)
+        carriers = models.Carrier.objects.filter(driver=current_driver)
+        newStatus = models.TripStatus.objects.get(title="پذیرفته شده")
+        loadedStatus = models.TripStatus.objects.get(title="بارگیری شده")
+        rsp = []
+        flag = False
+        for carrier in carriers:
+            for trip in models.Trip.objects.filter(carrier=carrier):
+                if trip.status == newStatus or trip.status == loadedStatus:
+                    if trip.status == newStatus:
+                        a = "پذیرفته شده"
+                    else:
+                        a = "بارگیری شده"
+                    rsp.append({"tripid": trip.id,
+                                "carrierTag": trip.carrier.tag,
+                                "status": a,
+                                "requestOrigin": trip.request.origin,
+                                "requestDestination": trip.request.destination,
+                                "requestReceiverName": trip.request.receiver_name,
+                                "requestReceiverPhone": trip.request.receiver_phone,
+                                "requestSenderName": trip.request.applicant.user.first_name + " " + trip.request.applicant.user.last_name,
+                                "requestSenderPhone": trip.request.applicant.user.phone
+                                })
+                    flag = True
+        return Response({"list": rsp, 'flag': flag}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsDriver])
+def showFinishedTrip(request):
+    try:
+        current_user = request.user
+        current_driver = models.Driver.objects.get(user=current_user)
+        carriers = models.Carrier.objects.filter(driver=current_driver)
+        unloadedStatus = models.TripStatus.objects.get(title="تخلیه شده")
+        rsp = []
+        flag = False
+        for carrier in carriers:
+            for trip in models.Trip.objects.filter(carrier=carrier):
+                if trip.status == unloadedStatus:
+                    rsp.append({"tripid": trip.id,
+                                "carrierTag": trip.carrier.tag,
+                                "status": "تخلیه شده",
+                                "requestOrigin": trip.request.origin,
+                                "requestid": trip.request.id,
+                                "requestDestination": trip.request.destination,
+                                "requestReceiverName": trip.request.receiver_name,
+                                "requestReceiverPhone": trip.request.receiver_phone,
+                                "requestSenderName": trip.request.applicant.user.first_name + " " + trip.request.applicant.user.last_name,
+                                "requestSenderPhone": trip.request.applicant.user.phone
+                                })
+                    flag = True
+        return Response({"list": rsp, "flag": flag}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsDriver])
+def loadAnnouncement(request):
+    try:
+        data = request.data
+        current_trip = models.Trip.objects.get(id=data["tripId"])
+        current_driver = models.Driver.objects.get(user=request.user)
+        if current_trip.carrier.driver == current_driver:
+            loaded_status = models.TripStatus.objects.get(title='بارگیری شده')
+            current_trip.status = loaded_status
+            current_trip.save()
+            return Response({"currentStatus": "بارگیری شده"}, status=status.HTTP_200_OK)
+        return Response({"message": "Just The owner of the trip can edit status!"},
+                        status=status.HTTP_406_NOT_ACCEPTABLE)
+    except Exception as e:
+        return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsDriver])
+def unloadAnnouncement(request):
+    try:
+        data = request.data
+        current_trip = models.Trip.objects.get(id=data["tripId"])
+        current_driver = models.Driver.objects.get(user=request.user)
+        loaded_status = models.TripStatus.objects.get(title='بارگیری شده')
+
+        if current_trip.carrier.driver == current_driver:
+            if current_trip.status == loaded_status:
+                unloaded_status = models.TripStatus.objects.get(title='تخلیه شده')
+                current_trip.status = unloaded_status
+                current_trip.save()
+                current_driver.can_accept = True
+                current_driver.save()
+                return Response({"currentStatus": "تخلیه شده"}, status=status.HTTP_200_OK)
+            return Response({"message": "You should load first"}, status=status.HTTP_406_NOT_ACCEPTABLE)
+        return Response({"message": "Just The owner of the trip can edit status!"},
+                        status=status.HTTP_406_NOT_ACCEPTABLE)
+    except Exception as e:
+        return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
 @permission_classes([IsAuthenticated, IsApplicant])
 def newRequest(request):
     try:
@@ -126,17 +435,17 @@ def newRequest(request):
         current_user = request.user
         current_applicant = models.Applicant.objects.get(user=current_user)
         origin = data["origin"]
-        loading_date = data["loading_date"]
+        loading_date = data["loadingDate"]
         destination = data["destination"]
-        unloading_date = data["unloading_date"]
+        unloading_date = data["unloadingDate"]
         weight = data["weight"]
         value = data["value"]
         description = data["description"]
-        proposed_price = data["proposed_price"]
-        receiver_name = data["receiver_name"]
-        receiver_phone = data["receiver_phone"]
-        truck_classification_requirement = data["truck_classification_requirement"]
-        load_type = models.LoadType.objects.get(title=data["load_type"])
+        proposed_price = data["proposedPrice"]
+        receiver_name = data["receiverName"]
+        receiver_phone = data["receiverPhone"]
+        truck_classification_requirement = data["truckClassificationRequirement"]
+        load_type = models.LoadType.objects.get(title=data["loadType"])
         SpecificReq = models.Request.objects.filter(applicant=current_applicant, origin=origin,
                                                     loading_date=loading_date, destination=destination,
                                                     unloading_date=unloading_date, load_type=load_type,
@@ -184,133 +493,25 @@ def cancelRequest(request):
         return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-@api_view(['POST'])
-@permission_classes([IsAuthenticated, IsDriver])
-def newCarrier(request):
-    try:
-        data = request.data
-        current_user = request.user
-        model = data["model"]
-        tag = data["tag"]
-        year = data["year"]
-        classification = data["classification"]
-        current_driver = models.Driver.objects.get(user=current_user)
-        isSubmitted = models.Carrier.objects.filter(tag=tag)
-        if not isSubmitted:
-            if models.Classification.objects.filter(title=classification):
-                carrierClassification = models.Classification.objects.get(title=classification)
-                models.Carrier.objects.create(driver=current_driver, model=model, tag=tag, year=year,
-                                              classification=carrierClassification)
-                return Response({"message": "New Truck added Successfully!"}, status=status.HTTP_200_OK)
-            return Response({"message": "Classification is not valid!"}, status=status.HTTP_406_NOT_ACCEPTABLE)
-        else:
-            return Response({"message": "This tag is already added!"}, status=status.HTTP_406_NOT_ACCEPTABLE)
-    except Exception as e:
-        return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated, IsDriver])
-def showRequestList(request):
-    try:
-        current_user = request.user
-        current_driver = models.Driver.objects.get(user=current_user)
-        carriers = models.Carrier.objects.filter(driver=current_driver)
-        rsp = set({})
-        for carrier in carriers:
-            if models.RequiredClass.objects.filter(classification=carrier.classification):
-                for i in models.RequiredClass.objects.filter(classification=carrier.classification):
-                    if not models.Trip.objects.filter(request=i.request):
-                        rsp.add(i.request.id)
-        return Response({"request list": rsp}, status=status.HTTP_200_OK)
-    except Exception as e:
-        return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-@api_view(['POST'])
-@permission_classes([IsAuthenticated, IsDriver])
-def acceptRequest(request):
-    try:
-        data = request.data
-        current_user = request.user
-        request_id = data["request_id"]
-        current_driver = models.Driver.objects.get(user=current_user)
-        current_driver_carriers = models.Carrier.objects.filter(driver=current_driver)
-        if models.Request.objects.filter(id=request_id):
-            current_request = models.Request.objects.get(id=request_id)
-            if current_driver.can_accept:
-                if not models.Trip.objects.filter(request=current_request):
-                    for carrier in current_driver_carriers:
-                        if models.RequiredClass.objects.filter(request=current_request,
-                                                               classification=carrier.classification):
-                            new_status = models.Status.objects.get(title='new')
-                            models.Trip.objects.create(request=current_request, carrier=carrier, status=new_status)
-                            current_driver.canAccept = False
-                            current_driver.save()
-                            return Response({"message": "OK!"}, status=status.HTTP_200_OK)
-                    return Response({"message": "You dont have required truck!"}, status=status.HTTP_406_NOT_ACCEPTABLE)
-                return Response({"message": "This request has an active trip!"}, status=status.HTTP_406_NOT_ACCEPTABLE)
-            else:
-                return Response({"message": "You have an active trip!"}, status=status.HTTP_406_NOT_ACCEPTABLE)
-        else:
-            return Response({"message": "This is not a valid request!"}, status=status.HTTP_406_NOT_ACCEPTABLE)
-    except Exception as e:
-        return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-@api_view(['POST'])
-@permission_classes([IsAuthenticated, IsDriver])
-def loadAnnouncement(request):
-    try:
-        data = request.data
-        current_trip = models.Trip.objects.get(id=data["trip_id"])
-        current_driver = models.Driver.objects.get(user=request.user)
-        if current_trip.carrier.driver == current_driver:
-            loaded_status = models.Status.objects.get(title='loaded')
-            current_trip.status = loaded_status
-            current_trip.save()
-            return Response({"message": "OK!"}, status=status.HTTP_200_OK)
-        return Response({"message": "Just The owner of the trip can edit status!"},
-                        status=status.HTTP_406_NOT_ACCEPTABLE)
-    except Exception as e:
-        return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-@api_view(['POST'])
-@permission_classes([IsAuthenticated, IsDriver])
-def unloadAnnouncement(request):
-    try:
-        data = request.data
-        current_trip = models.Trip.objects.get(id=data["trip_id"])
-        current_driver = models.Driver.objects.get(user=request.user)
-        if current_trip.carrier.driver == current_driver:
-            unloaded_status = models.Status.objects.get(title='unloaded')
-            current_trip.status = unloaded_status
-            current_trip.save()
-            return Response({"message": "OK!"}, status=status.HTTP_200_OK)
-        return Response({"message": "Just The owner of the trip can edit status!"},
-                        status=status.HTTP_406_NOT_ACCEPTABLE)
-    except Exception as e:
-        return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsApplicant])
 def showApplicantRequestList(request):
     try:
-        current_applicant = models.Driver.objects.get(user=request.user)
-        rsp = {}
+        current_applicant = models.Applicant.objects.get(user=request.user)
+        rsp = []
         requests = models.Request.objects.filter(applicant=current_applicant)
+        flag = False
         for request in requests:
             if not models.Trip.objects.filter(request=request):
-                rsp.update({"req_id": request.id,
+                rsp.append({"req_id": request.id,
                             "origin": request.origin,
                             "loading_date": request.loading_date,
                             "destination": request.destination,
                             "unloading_date": request.unloading_date,
-                            "load_type": request.load_type,
+                            "load_type": request.load_type.title,
                             "weight": request.weight})
-        return Response({"list": rsp}, status=status.HTTP_200_OK)
+                flag = True
+        return Response({"list": rsp, "flag": flag}, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -319,25 +520,91 @@ def showApplicantRequestList(request):
 @permission_classes([IsAuthenticated, IsApplicant])
 def showApplicantTripList(request):
     try:
-        current_applicant = models.Driver.objects.get(user=request.user)
-        rsp = {}
+        current_applicant = models.Applicant.objects.get(user=request.user)
+        rsp = []
+        flag = False
         requests = models.Request.objects.filter(applicant=current_applicant)
-        for request in requests:
-            if models.Trip.objects.filter(request=request):
-                trip = models.Trip.objects.get(request=request)
-                rsp.update({"trip_id": trip.id,
-                            "origin": request.origin,
-                            "loading_date": request.loading_date,
-                            "destination": request.destination,
-                            "unloading_date": request.unloading_date,
-                            "load_type": request.load_type,
-                            "weight": request.weight,
-                            "carrier_class": trip.carrier.classification,
-                            "carrier_model": trip.carrier.model,
-                            "carrier_tag": trip.carrier.tag,
-                            "driver_username": trip.carrier.driver.user.username,
-                            "trip_status": trip.status.title})
-        return Response({"list": rsp}, status=status.HTTP_200_OK)
+        for current_request in requests:
+            if models.Trip.objects.filter(request=current_request):
+                trip = models.Trip.objects.get(request=current_request)
+                newStatus = models.TripStatus.objects.get(title="پذیرفته شده")
+                loadedStatus = models.TripStatus.objects.get(title="بارگیری شده")
+                if trip.status == newStatus or trip.status == loadedStatus:
+                    rsp.append({"trip_id": trip.id,
+                                "origin": trip.request.origin,
+                                "loading_date": trip.request.loading_date,
+                                "destination": trip.request.destination,
+                                "unloading_date": trip.request.unloading_date,
+                                "load_type": trip.request.load_type.title,
+                                "weight": trip.request.weight,
+                                "carrier_class": trip.carrier.classification.title,
+                                "carrier_model": trip.carrier.model,
+                                "carrier_tag": trip.carrier.tag,
+                                "driverPhone": trip.carrier.driver.user.phone,
+                                "driverName": trip.carrier.driver.user.first_name + " " + trip.carrier.driver.user.last_name,
+                                "trip_status": trip.status.title})
+                    flag = True
+        return Response({"list": rsp, "flag": flag}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsApplicant])
+def showApplicantTripDetails(request):
+    try:
+        data = request.data
+        trip_id = data["trip_id"]
+        trip = models.Trip.objects.get(id=trip_id)
+        current_request = trip.request
+        rsp = {"tripId": trip.id, "origin": current_request.origin,
+               "loadingDate": current_request.loading_date,
+               "destination": current_request.destination,
+               "unloadingDate": current_request.unloading_date,
+               "loadType": current_request.load_type.title,
+               "weight": current_request.weight,
+               "proposedPrice": current_request.proposed_price,
+               "carrierClass": trip.carrier.classification.title,
+               "carrierModel": trip.carrier.model,
+               "carrierTag": trip.carrier.tag,
+               "driverPhone": trip.carrier.driver.user.phone,
+               "driverName": trip.carrier.driver.user.first_name + " " + trip.carrier.driver.user.last_name,
+               "tripStatus": trip.status.title}
+        return Response({"rsp": rsp}, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsApplicant])
+def showApplicantFinishedTripList(request):
+    try:
+        current_applicant = models.Applicant.objects.get(user=request.user)
+        rsp = []
+        flag = False
+        requests = models.Request.objects.filter(applicant=current_applicant)
+        for current_request in requests:
+            if models.Trip.objects.filter(request=current_request):
+                trip = models.Trip.objects.get(request=current_request)
+                unloadedStatus = models.TripStatus.objects.get(title="تخلیه شده")
+                if trip.status == unloadedStatus:
+                    rsp.append({"trip_id": trip.id,
+                                "origin": trip.request.origin,
+                                "loading_date": trip.request.loading_date,
+                                "destination": trip.request.destination,
+                                "unloading_date": trip.request.unloading_date,
+                                "load_type": trip.request.load_type.title,
+                                "weight": trip.request.weight,
+                                "carrier_class": trip.carrier.classification.title,
+                                "carrier_model": trip.carrier.model,
+                                "carrier_tag": trip.carrier.tag,
+                                "driverPhone": trip.carrier.driver.user.phone,
+                                "driverName": trip.carrier.driver.user.first_name + " " + trip.carrier.driver.user.last_name,
+                                "trip_status": trip.status.title})
+
+                    flag = True
+        return Response({"list": rsp, "flag": flag}, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
