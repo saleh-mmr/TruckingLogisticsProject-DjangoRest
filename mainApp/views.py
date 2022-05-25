@@ -9,7 +9,6 @@ from rest_framework.response import Response
 from . import models
 from .Authorization import IsDriver, IsApplicant
 from .Authentication import token_expire_handler
-
 import json
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
@@ -17,6 +16,7 @@ from django.http import JsonResponse
 from stream_chat import StreamChat
 
 
+# AUTHENTICATION SERVICE
 @api_view(['POST'])
 @permission_classes(())
 def signUp(request):
@@ -53,6 +53,7 @@ def signUp(request):
         return Response({"message": "Something might be Wrong!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+# AUTHENTICATION SERVICE
 @api_view(['POST'])
 @permission_classes(())
 def signIn(request):
@@ -78,6 +79,7 @@ def signIn(request):
         return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+# AUTHENTICATION SERVICE
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def signOut(request):
@@ -89,6 +91,7 @@ def signOut(request):
         return Response({"message": "An error occurs in logout!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+# AUTHENTICATION SERVICE
 @api_view(['POST'])
 @permission_classes(())
 def isRegistered(request):
@@ -103,59 +106,7 @@ def isRegistered(request):
         return Response({"message": "Something might be Wrong!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-@api_view(['POST'])
-@permission_classes(())
-def isRegistered(request):
-    try:
-        data = request.data
-        data_phone = data['pnumber']
-        found_user = models.MyUser.objects.filter(phone=data_phone)
-        if found_user:
-            return Response({"flag": True}, status=status.HTTP_200_OK)
-        return Response({"flag": False}, status=status.HTTP_200_OK)
-    except Exception as e:
-        return Response({"message": "Something might be Wrong!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-@api_view(['GET'])
-@permission_classes(())
-def getNumbers(request):
-    try:
-        driverNum = models.Driver.objects.filter().count()
-        applicantNum = models.Applicant.objects.filter().count()
-        unloaded = models.TripStatus.objects.get(title="تخلیه شده")
-        tripNum = models.Trip.objects.filter(status=unloaded).count()
-        carrierNum = models.Carrier.objects.count()
-        rsp = {"driverNum": driverNum, "applicantNum": applicantNum, "tripNum": tripNum, "carrierNum": carrierNum}
-        return Response(rsp, status=status.HTTP_200_OK)
-    except Exception as e:
-        return Response({"message": "Something might be Wrong!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-@api_view(['GET'])
-@permission_classes(())
-def getLoadType(request):
-    try:
-        rsp = []
-        for i in models.LoadType.objects.filter():
-            rsp.append(i.title)
-        return Response({"list": rsp}, status=status.HTTP_200_OK)
-    except Exception as e:
-        return Response({"message": "Something might be Wrong!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-@api_view(['GET'])
-@permission_classes(())
-def getClassifications(request):
-    try:
-        rsp = []
-        for i in models.Classification.objects.filter():
-            rsp.append(i.title)
-        return Response({"list": rsp}, status=status.HTTP_200_OK)
-    except Exception as e:
-        return Response({"message": "Something might be Wrong!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
+# AUTHENTICATION SERVICE
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def checkUserType(request):
@@ -168,6 +119,7 @@ def checkUserType(request):
         return Response({"message": "Something might be Wrong!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+# TEST SERVICE
 @api_view(['POST'])
 @permission_classes(())
 def isValid(request):
@@ -182,6 +134,7 @@ def isValid(request):
         return Response({"message": "Something might be Wrong!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+# FORMS SERVICE
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsDriver])
 def getDriverInfo(request):
@@ -198,6 +151,49 @@ def getDriverInfo(request):
         return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+# FORMS SERVICE
+@api_view(['GET'])
+@permission_classes(())
+def getNumbers(request):
+    try:
+        driverNum = models.Driver.objects.filter().count()
+        applicantNum = models.Applicant.objects.filter().count()
+        unloaded = models.TripStatus.objects.get(title="تخلیه شده")
+        tripNum = models.Trip.objects.filter(status=unloaded).count()
+        carrierNum = models.Carrier.objects.count()
+        rsp = {"driverNum": driverNum, "applicantNum": applicantNum, "tripNum": tripNum, "carrierNum": carrierNum}
+        return Response(rsp, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"message": "Something might be Wrong!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# FORMS SERVICE
+@api_view(['GET'])
+@permission_classes(())
+def getLoadType(request):
+    try:
+        rsp = []
+        for i in models.LoadType.objects.filter():
+            rsp.append(i.title)
+        return Response({"list": rsp}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"message": "Something might be Wrong!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# FORMS SERVICE
+@api_view(['GET'])
+@permission_classes(())
+def getClassifications(request):
+    try:
+        rsp = []
+        for i in models.Classification.objects.filter():
+            rsp.append(i.title)
+        return Response({"list": rsp}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"message": "Something might be Wrong!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# DRIVER DASHBOARD SERVICE
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsDriver])
 def showCarriers(request):
@@ -216,6 +212,7 @@ def showCarriers(request):
         return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+# DRIVER DASHBOARD SERVICE
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsDriver])
 def newCarrier(request):
@@ -241,6 +238,7 @@ def newCarrier(request):
         return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+# DRIVER DASHBOARD SERVICE
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsDriver])
 def showRequestList(request):
@@ -264,6 +262,7 @@ def showRequestList(request):
         return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+# DRIVER DASHBOARD SERVICE
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsDriver])
 def showRequestDetail(request):
@@ -292,6 +291,7 @@ def showRequestDetail(request):
         return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+# DRIVER DASHBOARD SERVICE
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsDriver])
 def acceptRequest(request):
@@ -318,9 +318,11 @@ def acceptRequest(request):
             return Response({"message": "You have an active trip!"}, status=status.HTTP_406_NOT_ACCEPTABLE)
         return Response({"message": "This is not a valid request!"}, status=status.HTTP_406_NOT_ACCEPTABLE)
     except Exception as e:
+        print(e)
         return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+# DRIVER DASHBOARD SERVICE
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsDriver])
 def showActiveTrip(request):
@@ -355,6 +357,7 @@ def showActiveTrip(request):
         return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+# DRIVER DASHBOARD SERVICE
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsDriver])
 def showFinishedTrip(request):
@@ -385,6 +388,7 @@ def showFinishedTrip(request):
         return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+# DRIVER DASHBOARD SERVICE
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsDriver])
 def loadAnnouncement(request):
@@ -403,6 +407,7 @@ def loadAnnouncement(request):
         return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+# DRIVER DASHBOARD SERVICE
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsDriver])
 def unloadAnnouncement(request):
@@ -427,6 +432,7 @@ def unloadAnnouncement(request):
         return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+# APPLICANT DASHBOARD SERVICE
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsApplicant])
 def newRequest(request):
@@ -472,6 +478,7 @@ def newRequest(request):
         return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+# APPLICANT DASHBOARD SERVICE
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated, IsApplicant])
 def cancelRequest(request):
@@ -493,6 +500,7 @@ def cancelRequest(request):
         return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+# APPLICANT DASHBOARD SERVICE
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsApplicant])
 def showApplicantRequestList(request):
@@ -516,6 +524,7 @@ def showApplicantRequestList(request):
         return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+# APPLICANT DASHBOARD SERVICE
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsApplicant])
 def showApplicantTripList(request):
@@ -549,6 +558,7 @@ def showApplicantTripList(request):
         return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+# APPLICANT DASHBOARD SERVICE
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsApplicant])
 def showApplicantTripDetails(request):
@@ -576,6 +586,7 @@ def showApplicantTripDetails(request):
         return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+# APPLICANT DASHBOARD SERVICE
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsApplicant])
 def showApplicantFinishedTripList(request):
@@ -609,6 +620,7 @@ def showApplicantFinishedTripList(request):
         return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+# CHAT SERVICE
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsDriver])
 def chatDriver(request):
@@ -629,6 +641,7 @@ def chatDriver(request):
         return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+# CHAT SERVICE
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsApplicant])
 def chatApplicant(request):
@@ -649,6 +662,7 @@ def chatApplicant(request):
         return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+# CHAT SERVICE
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def conversation(request):
@@ -669,6 +683,7 @@ def conversation(request):
         return Response({"message": "An error occurs!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+# CHAT SERVICE
 @csrf_exempt
 def streamChat(request):
     if not request.body:
