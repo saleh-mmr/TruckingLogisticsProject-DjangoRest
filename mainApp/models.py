@@ -11,7 +11,6 @@ class MyUser(AbstractUser):
 
 class Driver(models.Model):
     user = models.OneToOneField(MyUser, on_delete=models.CASCADE)
-    license_number = models.CharField(blank=False, unique=True, max_length=70)
     can_accept = models.BooleanField(default=True)
 
     def __str__(self):
@@ -43,7 +42,7 @@ class Carrier(models.Model):
     driver = models.ForeignKey(Driver, on_delete=models.CASCADE)
     classification = models.ForeignKey(Classification, on_delete=models.RESTRICT)
     model = models.CharField(blank=False, max_length=70)
-    year = models.IntegerField(blank=False)
+    year = models.CharField(blank=False, max_length=70)
     tag = models.CharField(blank=False, max_length=70, unique=True)
 
     def __str__(self):
@@ -68,7 +67,7 @@ class Request(models.Model):
         return self.applicant.user.username + ' from ' + self.origin + ' to ' + self.destination
 
 
-class Status(models.Model):
+class TripStatus(models.Model):
     title = models.CharField(max_length=100, unique=True)
 
     def __str__(self):
@@ -78,7 +77,7 @@ class Status(models.Model):
 class Trip(models.Model):
     request = models.OneToOneField(Request, on_delete=models.RESTRICT)
     carrier = models.ForeignKey(Carrier, on_delete=models.RESTRICT)
-    status = models.ForeignKey(Status, on_delete=models.RESTRICT)
+    status = models.ForeignKey(TripStatus, on_delete=models.RESTRICT)
 
     def __str__(self):
         return self.request.origin + ' to ' + self.request.destination + ' by ' + str(self.carrier.model)
